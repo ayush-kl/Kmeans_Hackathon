@@ -1,0 +1,59 @@
+[
+  {
+    "device_id": "DEF001",
+    "tower_id": "T100",
+    "timestamp": "2025-07-25T08:00:00Z",
+    "lat": 28.7041,
+    "lon": 77.1025,
+    "is_defaulter": true
+  },
+  {
+    "device_id": "DEF001",
+    "tower_id": "T105",
+    "timestamp": "2025-07-25T08:20:00Z",
+    "lat": 28.7050,
+    "lon": 77.1100,
+    "is_defaulter": true
+  },
+  {
+    "device_id": "DEF001",
+    "tower_id": "T108",
+    "timestamp": "2025-07-25T08:45:00Z",
+    "lat": 28.7100,
+    "lon": 77.1150,
+    "is_defaulter": true
+  },
+  {
+    "device_id": "DEF001",
+    "tower_id": "T112",
+    "timestamp": "2025-07-25T09:00:00Z",
+    "lat": 28.7200,
+    "lon": 77.1200,
+    "is_defaulter": true
+  },
+
+  {
+    "device_id": "DEF002",
+    "tower_id": "T200",
+    "timestamp": "2025-07-25T07:30:00Z",
+    "lat": 19.0760,
+    "lon": 72.8777,
+    "is_defaulter": true
+  },
+  {
+    "device_id": "DEF002",
+    "tower_id": "T205",
+    "timestamp": "2025-07-25T07:45:00Z",
+    "lat": 19.0800,
+    "lon": 72.8800,
+    "is_defaulter": true
+  },
+  {
+    "device_id": "DEF002",
+    "tower_id": "T210",
+    "timestamp": "2025-07-25T08:10:00Z",
+    "lat": 19.0850,
+    "lon": 72.8850,
+    "is_defaulter": true
+  }
+]

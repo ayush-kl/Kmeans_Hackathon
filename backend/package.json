@@ -1,7 +1,22 @@
 {
+  "name": "sbi-defaulter-tracker-backend",
+  "version": "1.0.0",
+  "description": "Backend API for SBI Defaulter Location Tracker",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "jest"
+  },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "multer": "^2.0.1"
-  }
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  },
+  "keywords": ["sbi", "defaulter", "location", "tracker", "api"],
+  "author": "SBI Team",
+  "license": "MIT"
 }
