@@ -40,9 +40,6 @@ pip install pandas numpy scikit-learn matplotlib xgboost lightgbm catboost imbal
 - Adjust parameters (e.g., contamination, SMOTE ratio, model hyperparameters) as needed.
 - Review model performance and select the best approach for your use case.
 
-## Author
-- Team Chimps (Hackathon Submission)
-
 ---
 For questions or improvements, please contact the notebook author or your team lead.
 
@@ -58,23 +55,7 @@ Both versions support user registration, event logging (UPI, login, app open), a
 
 ---
 
-## 📁 Project Structure
 
-```
-SBI_Hackathon/
-├── backend/              # Node.js backend (Soln 2)
-│   └── server.js
-├── django_backend/       # Django backend (Soln 1)
-│   ├── manage.py
-│   └── ...
-├── frontend/             # React frontend (shared)
-│   ├── src/
-│   └── ...
-├── requirements.txt      # Python requirements for Django
-└── README.md             # This file
-```
-
----
 
 # 🔵 Soln 1 – Django + React
 
@@ -213,20 +194,3 @@ An alternative solution using a lightweight Node.js backend for API handling, pa
 - Node.js v14+
 - npm v6+
 
----
-
-## 👨‍💻 Author
-
-**Ayush Lohia**  
-📧 ayushkl.official@gmail.com  
-🔗 [GitHub Profile](https://github.com/ayush-kl)
-
----
-
-## 📜 License
-
-This project is licensed under the **MIT License** – feel free to use, modify, and distribute!
-
----
-
-> _“Built to enhance digital event monitoring and analysis for secure banking ecosystems.”_
