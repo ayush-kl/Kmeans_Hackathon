@@ -1,0 +1,302 @@
+{% extends 'sbi_app/base.html' %}
+
+{% block title %}Analysis Results - SBI{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Header -->
+    <div class="col-12 mb-4">
+        <div class="card card-custom">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2 class="text-white mb-2">
+                            <i class="fas fa-chart-line"></i> Analysis Results #{{ analysis.id }}
+                        </h2>
+                        <p class="text-white-50 mb-0">
+                            <i class="fas fa-clock"></i> Processed: {{ analysis.processed_at|date:"M d, Y H:i:s" }}
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <a href="{% url 'authority_dashboard' %}" class="btn btn-outline-light">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="col-12 mb-4">
+        <div class="card card-custom">
+            <div class="card-header bg-transparent border-0">
+                <h4 class="text-white mb-0">
+                    <i class="fas fa-chart-bar"></i> Summary Statistics
+                </h4>
+            </div>
+            <div class="card-body p-4">
+                <div class="row">
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="text-white">
+                            <i class="fas fa-users fa-2x mb-2"></i>
+                            <h3>{{ results.summary.total_users }}</h3>
+                            <p>Total Users</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="text-white">
+                            <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                            <h3>{{ results.summary.total_events }}</h3>
+                            <p>Total Events</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="text-white">
+                            <i class="fas fa-layer-group fa-2x mb-2"></i>
+                            <h3>{{ results.summary.total_clusters }}</h3>
+                            <p>Clusters Found</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="text-white">
+                            <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                            <h3>{{ results.summary.noise_points }}</h3>
+                            <p>Noise Points</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Algorithm Parameters -->
+    <div class="col-md-6 mb-4">
+        <div class="card card-custom">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="text-white mb-0">
+                    <i class="fas fa-cogs"></i> Algorithm Parameters
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="text-white">
+                    <div class="row mb-2">
+                        <div class="col-6"><strong>DBSCAN Epsilon:</strong></div>
+                        <div class="col-6">{{ results.algorithm_parameters.dbscan_eps }}°</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6"><strong>Min Samples:</strong></div>
+                        <div class="col-6">{{ results.algorithm_parameters.dbscan_min_samples }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6"><strong>Time Decay:</strong></div>
+                        <div class="col-6">{{ results.algorithm_parameters.time_decay_hours }} hours</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6"><strong>Night Boost:</strong></div>
+                        <div class="col-6">{{ results.algorithm_parameters.night_boost_factor }}x</div>
+                    </div>
+                </div>
+                <hr class="border-light">
+                <h6 class="text-white mb-2">Event Weights:</h6>
+                <div class="text-white small">
+                    {% for event_type, weight in results.algorithm_parameters.event_weights.items %}
+                    <div class="row">
+                        <div class="col-6">{{ event_type|upper }}:</div>
+                        <div class="col-6">{{ weight }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Distribution -->
+    <div class="col-md-6 mb-4">
+        <div class="card card-custom">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="text-white mb-0">
+                    <i class="fas fa-pie-chart"></i> Event Distribution
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                {% for event_type, count in results.summary.event_distribution.items %}
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-white">{{ event_type|upper }}</span>
+                    <span class="badge bg-secondary">{{ count }}</span>
+                </div>
+                <div class="progress mb-3" style="height: 8px;">
+                    <div class="progress-bar bg-info" role="progressbar"
+                        style="width: {% widthratio count results.summary.total_events 100 %}%;">
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- User Results Table -->
+    <div class="col-12 mb-4">
+        <div class="card card-custom">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="text-white mb-0">
+                    <i class="fas fa-users"></i> User Analysis Results
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped">
+                        <thead>
+                            <tr>
+                                <th>User ID</th>
+                                <th>Total Events</th>
+                                <th>Clusters</th>
+                                <th>Primary Prediction</th>
+                                <th>Confidence</th>
+                                <th>Time Range</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user_result in results.user_results %}
+                            <tr>
+                                <td><strong>{{ user_result.user_id }}</strong></td>
+                                <td>{{ user_result.total_events }}</td>
+                                <td>{{ user_result.clusters_involved }}</td>
+                                <td>
+                                    {% if user_result.primary_prediction %}
+                                    <a href="https://www.openstreetmap.org/#map=18/{{ user_result.primary_prediction.predicted_lat }}/{{ user_result.primary_prediction.predicted_lon }}"
+                                        target="_blank" class="text-warning text-decoration-none">
+                                        {{ user_result.primary_prediction.predicted_lat|floatformat:4 }},
+                                        {{ user_result.primary_prediction.predicted_lon|floatformat:4 }}
+                                    </a>
+                                    {% else %}
+                                    <span class="text-muted">No prediction</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user_result.primary_prediction %}
+                                    <span class="badge bg-success">{{
+                                        user_result.primary_prediction.confidence|floatformat:2 }}</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>
+                                        {{ user_result.time_range.first_event|slice:":16" }}<br>
+                                        {{ user_result.time_range.last_event|slice:":16" }}
+                                    </small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cluster Information -->
+    {% if results.cluster_info %}
+    <div class="col-12 mb-4">
+        <div class="card card-custom">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="text-white mb-0">
+                    <i class="fas fa-layer-group"></i> Cluster Information
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="row">
+                    {% for cluster_name, cluster_data in results.cluster_info.items %}
+                    <div class="col-md-6 mb-4">
+                        <div class="border border-light rounded p-3">
+                            <h6 class="text-white">
+                                <i class="fas fa-circle text-info"></i> Cluster {{ cluster_data.cluster_id }}
+                            </h6>
+                            <div class="text-white small">
+                                <div class="row mb-1">
+                                    <div class="col-6">Events:</div>
+                                    <div class="col-6">{{ cluster_data.event_count }}</div>
+                                </div>
+                                <div class="row mb-1">
+                                    <div class="col-6">Users:</div>
+                                    <div class="col-6">{{ cluster_data.user_count }}</div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-6">Centroid:</div>
+                                    <div class="col-6">
+                                        <a href="https://www.openstreetmap.org/#map=18/{{ cluster_data.centroid.lat }}/{{ cluster_data.centroid.lon }}"
+                                            target="_blank" class="text-warning text-decoration-none small">
+                                            {{ cluster_data.centroid.lat|floatformat:4 }}, {{
+                                            cluster_data.centroid.lon|floatformat:4 }}
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Event Types:</strong><br>
+                                    {% for event_type, count in cluster_data.event_types.items %}
+                                    <span class="badge bg-secondary me-1">{{ event_type }}: {{ count }}</span>
+                                    {% endfor %}
+                                </div>
+                                <div>
+                                    <strong>Users:</strong><br>
+                                    <small class="text-white-50">{{ cluster_data.users|join:", " }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Download Options -->
+    <div class="col-12">
+        <div class="card card-custom">
+            <div class="card-body p-4 text-center">
+                <h5 class="text-white mb-3">
+                    <i class="fas fa-download"></i> Export Options
+                </h5>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <button class="btn btn-info btn-lg w-100" onclick="downloadResults()">
+                            <i class="fas fa-file-download"></i> Download Analysis (JSON)
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="{% url 'download_data' %}" class="btn btn-secondary btn-lg w-100">
+                            <i class="fas fa-database"></i> Download Raw Data
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="{% url 'all_analyses' %}" class="btn btn-success btn-lg w-100">
+                            <i class="fas fa-list"></i> View All Analyses
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function downloadResults() {
+        const results = {{ results| safe
+    }};
+    const dataStr = JSON.stringify(results, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `analysis_results_{{ analysis.id }}_{{ analysis.processed_at|date:"Ymd_His" }}.json`;
+    link.click();
+
+    URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

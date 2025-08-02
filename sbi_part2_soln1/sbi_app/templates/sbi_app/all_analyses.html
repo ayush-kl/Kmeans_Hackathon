@@ -1,0 +1,153 @@
+{% extends 'sbi_app/base.html' %}
+
+{% block title %}All Analyses - SBI{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Header -->
+    <div class="col-12 mb-4">
+        <div class="card card-custom">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2 class="text-white mb-2">
+                            <i class="fas fa-chart-line"></i> All Analysis Results
+                        </h2>
+                        <p class="text-white-50 mb-0">
+                            <i class="fas fa-database"></i> Historical data processing results
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <a href="{% url 'authority_dashboard' %}" class="btn btn-outline-light me-2">
+                            <i class="fas fa-arrow-left"></i> Dashboard
+                        </a>
+                        <a href="{% url 'process_data' %}" class="btn btn-warning">
+                            <i class="fas fa-plus"></i> New Analysis
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analyses List -->
+    <div class="col-12">
+        <div class="card card-custom">
+            <div class="card-header bg-transparent border-0">
+                <h4 class="text-white mb-0">
+                    <i class="fas fa-list"></i> Analysis History
+                </h4>
+            </div>
+            <div class="card-body p-4">
+                {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped">
+                        <thead>
+                            <tr>
+                                <th>Analysis ID</th>
+                                <th>Processing Date</th>
+                                <th>Total Users</th>
+                                <th>Total Events</th>
+                                <th>Data File</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for analysis in page_obj %}
+                            <tr>
+                                <td>
+                                    <strong class="text-warning">#{{ analysis.id }}</strong>
+                                </td>
+                                <td>
+                                    {{ analysis.processed_at|date:"M d, Y" }}<br>
+                                    <small class="text-muted">{{ analysis.processed_at|date:"H:i:s" }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ analysis.total_users }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">{{ analysis.total_events }}</span>
+                                </td>
+                                <td>
+                                    {% if analysis.raw_data_file %}
+                                    <small class="text-muted">{{ analysis.raw_data_file|truncatechars:30 }}</small>
+                                    {% else %}
+                                    <small class="text-muted">-</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'view_analysis' analysis.id %}"
+                                            class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-success"
+                                            onclick="downloadAnalysis({{ analysis.id }})">
+                                            <i class="fas fa-download"></i> Download
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Analyses pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link bg-dark border-light text-white" href="?page=1">&laquo; First</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link bg-dark border-light text-white"
+                                href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                        </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link bg-primary border-primary">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link bg-dark border-light text-white"
+                                href="?page={{ page_obj.next_page_number }}">Next</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link bg-dark border-light text-white"
+                                href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+                {% else %}
+                <div class="text-center text-white-50 py-5">
+                    <i class="fas fa-chart-line fa-4x mb-3"></i>
+                    <h4>No Analyses Found</h4>
+                    <p>No data processing has been performed yet.</p>
+                    <a href="{% url 'process_data' %}" class="btn btn-warning btn-lg">
+                        <i class="fas fa-brain"></i> Process Data Now
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function downloadAnalysis(analysisId) {
+        // This would normally fetch the analysis data and download it
+        alert('Analysis download functionality would be implemented here for Analysis #' + analysisId);
+    }
+</script>
+{% endblock %}

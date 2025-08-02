@@ -1,0 +1,145 @@
+{% extends "admin/base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrahead %}{{ block.super }}
+<style>
+    .delete-buttons {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+
+    .delete-buttons h3 {
+        color: #d63031;
+        margin-bottom: 15px;
+        font-size: 18px;
+    }
+
+    .delete-btn {
+        background: #d63031;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 4px;
+        margin: 5px;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 14px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    .delete-btn:hover {
+        background: #b71c1c;
+        color: white;
+        text-decoration: none;
+    }
+
+    .warning-text {
+        color: #856404;
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+        font-size: 13px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if cl %}
+{{ block.super }}
+{% else %}
+<div id="content-main">
+    <div class="module filtered">
+        <h2>Site administration</h2>
+        <caption>
+            <p>Welcome to the SBI Application Administration Panel</p>
+        </caption>
+    </div>
+
+    <!-- Custom Delete Buttons Section -->
+    <div class="delete-buttons">
+        <h3><i class="icon-remove"></i> Quick Data Management</h3>
+        <div class="warning-text">
+            <strong>Warning:</strong> These actions will permanently delete data. Use with caution!
+        </div>
+
+        <div style="margin-top: 15px;">
+            <a href="/admin/sbi_app/sbiuser/delete-all-users/" class="delete-btn"
+                onclick="return confirm('Are you sure you want to delete all regular users? Superusers and authority users will be preserved.')">
+                � Delete All Users (Keep Admin/Authority)
+            </a>
+
+            <a href="/admin/sbi_app/userevent/delete-all-events/" class="delete-btn"
+                onclick="return confirm('Are you sure you want to delete all user events?')">
+                � Delete All Events
+            </a>
+
+            <a href="/admin/sbi_app/processeddata/delete-all-processed/" class="delete-btn"
+                onclick="return confirm('Are you sure you want to delete all processed data?')">
+                � Delete All Processed Data
+            </a>
+        </div>
+
+        <div style="margin-top: 15px; border-top: 1px solid #dee2e6; padding-top: 15px;">
+            <a href="/admin/clear-all-data/" class="delete-btn"
+                style="background: #721c24; font-size: 16px; padding: 10px 20px;"
+                onclick="return confirm('⚠️ DANGER: This will delete ALL application data! Are you absolutely sure?')">
+                🗑️ CLEAR ALL APPLICATION DATA
+            </a>
+        </div>
+
+        <div style="margin-top: 15px;">
+            <a href="javascript:void(0)" class="delete-btn" id="deleteOldData" onclick="deleteOldData()"
+                style="background: #6f42c1;">
+                🧹 Clean Old Data (30+ days)
+            </a>
+
+            <a href="/admin/" class="button"
+                style="background: #417690; color: white; padding: 8px 15px; margin: 5px; text-decoration: none;">
+                📊 Back to Admin Home
+            </a>
+        </div>
+    </div>
+
+    {{ block.super }}
+</div>
+
+<script>
+    function deleteOldData() {
+        if (confirm('This will delete:\n- Events older than 30 days\n- Processed data older than 7 days\n\nContinue?')) {
+            // Create a form to submit multiple delete requests
+            fetch('/admin/sbi_app/userevent/delete-old-events/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'action=delete_old_events&_selected_action='
+            }).then(() => {
+                return fetch('/admin/sbi_app/processeddata/delete-old-processed/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'action=delete_old_data&_selected_action='
+                });
+            }).then(() => {
+                alert('Old data cleaned successfully!');
+                location.reload();
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('Error cleaning old data. Please try again.');
+            });
+        }
+    }
+</script>
+{% endif %}
+{% endblock %}

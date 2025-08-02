@@ -1,0 +1,104 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5f9ff;
+  color: #002868; /* SBI Blue */
+}
+
+.container {
+  max-width: 1100px;
+  margin: auto;
+  padding: 2rem;
+  background-color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 3px solid #005aaa;
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+}
+
+header h1 {
+  font-size: 2rem;
+  color: #005aaa;
+}
+
+.form {
+  margin-bottom: 2rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="datetime-local"],
+input[type="file"] {
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 2px solid #d0e2ff;
+  border-radius: 6px;
+  background-color: #f5f9ff;
+  color: #002868;
+}
+
+input:focus {
+  border-color: #005aaa;
+  outline: none;
+}
+
+label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+button {
+  padding: 0.6rem 1.2rem;
+  background-color: #005aaa;
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background-color: #003e7e;
+}
+
+.output-card {
+  background: #eef6ff;
+  border-left: 5px solid #005aaa;
+  padding: 1rem 1.5rem;
+  margin-bottom: 2rem;
+  border-radius: 6px;
+}
+
+.output-card h2 {
+  margin-top: 0;
+}
+
+details {
+  background-color: #f5faff;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+}
+
+details summary {
+  cursor: pointer;
+  font-weight: bold;
+  color: #005aaa;
+}

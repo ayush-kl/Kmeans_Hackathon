@@ -1,0 +1,617 @@
+{% extends 'sbi_app/base.html' %}
+{% load timezone_filters %}
+
+{% block title %}User Dashboard - SBI{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Welcome Section -->
+    <div class="col-12 mb-4">
+        <div class="card border-0 shadow">
+            <div class="card-body p-4"
+                style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white;">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2 class="text-white mb-2">
+                            <i class="fas fa-user"></i> Welcome, {{ user.first_name }} {{ user.last_name }}
+                        </h2>
+                        <p class="text-white-50 mb-0">
+                            <i class="fas fa-id-card"></i> Aadhaar: {{ user.aadhaar_number }} |
+                            <i class="fas fa-envelope"></i> {{ user.email }}
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <span class="badge fs-6" style="background-color: #ff6600;">
+                            <i class="fas fa-user-check"></i> Active User
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Recording Section -->
+    <div class="col-md-8 mb-4">
+        <div class="card border-0 shadow">
+            <div class="card-header border-0"
+                style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white;">
+                <h4 class="text-white mb-0">
+                    <i class="fas fa-map-marker-alt"></i> Record Banking Events
+                </h4>
+                <p class="text-white-50 small mb-0">Click buttons below to record events with your current location</p>
+            </div>
+            <div class="card-body p-4" style="background-color: #f8f9fa;">
+                <!-- Location Status -->
+                <div id="locationStatus" class="alert alert-info text-center mb-4">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <div class="spinner-border spinner-border-sm me-2" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <strong>Requesting location access...</strong>
+                    </div>
+                    <div class="small mt-2 text-muted">
+                        🚨 Events are DISABLED until location is enabled
+                    </div>
+                </div>
+
+                <!-- Location Information -->
+                <div id="locationInfo" class="alert alert-secondary mb-4" style="display: none;">
+                    <h6><i class="fas fa-crosshairs"></i> Current Location</h6>
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <strong>Latitude:</strong><br>
+                            <span id="currentLat">--</span>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Longitude:</strong><br>
+                            <span id="currentLon">--</span>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Accuracy:</strong><br>
+                            <span id="accuracy">--</span>
+                        </div>
+                    </div>
+                    <div class="text-center mt-2">
+                        <a id="map-link" href="#" target="_blank" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-external-link-alt"></i> View on Map
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Event Buttons -->
+                <div class="row g-3">
+                    <div class="col-12">
+                        <button class="btn btn-success btn-lg w-100" onclick="recordEvent('login')" disabled
+                            id="loginBtn" style="opacity: 0.5;">
+                            <i class="fas fa-sign-in-alt"></i> SBI Login Event
+                        </button>
+                    </div>
+                    <div class="col-12">
+                        <button class="btn btn-primary btn-lg w-100" onclick="recordEvent('upi')" disabled id="upiBtn"
+                            style="opacity: 0.5;">
+                            <i class="fas fa-credit-card"></i> UPI Transaction Event
+                        </button>
+                    </div>
+                    <div class="col-12">
+                        <button class="btn btn-warning btn-lg w-100" onclick="recordEvent('app_open')" disabled
+                            id="app_openBtn" style="opacity: 0.5;">
+                            <i class="fas fa-mobile-alt"></i> SBI App Open Event
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Events -->
+    <div class="col-md-4 mb-4">
+        <div class="card border-0 shadow">
+            <div class="card-header border-0"
+                style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white;">
+                <h5 class="text-white mb-0">
+                    <i class="fas fa-history"></i> Recent Events
+                </h5>
+            </div>
+            <div class="card-body p-3" style="background-color: #f8f9fa; max-height: 300px; overflow-y: auto;">
+                {% if recent_events %}
+                <div class="list-group list-group-flush">
+                    {% for event in recent_events %}
+                    <div class="list-group-item border-0 p-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge bg-secondary">{{ event.event_type|upper }}</span>
+                                <small class="d-block text-muted">
+                                    {{ event.timestamp|ist_short }}
+                                </small>
+                            </div>
+                            <small class="text-muted">
+                                {{ event.latitude|floatformat:4 }}, {{ event.longitude|floatformat:4 }}
+                            </small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center">
+                    <i class="fas fa-info-circle"></i><br>
+                    No events recorded yet.<br>
+                    Start by recording your first event!
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Instructions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow">
+            <div class="card-body p-3" style="background-color: #f8f9fa;">
+                <h6 class="text-warning mb-2">
+                    <i class="fas fa-exclamation-triangle"></i> Location Required
+                </h6>
+                <div class="row text-muted small">
+                    <div class="col-md-4">
+                        <strong>🚫 Location:</strong> GPS access is required to use this app.
+                    </div>
+                    <div class="col-md-4">
+                        <strong>🚫 Events:</strong> All buttons are disabled until location is enabled.
+                    </div>
+                    <div class="col-md-4">
+                        <strong>🚫 Tracking:</strong> Cannot record events without precise location data.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Utility function to format datetime in IST
+    function formatDateTimeIST(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            year: 'numeric',
+            month: 'short',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
+    }
+
+    // Utility function to format time only in IST
+    function formatTimeIST(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleTimeString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
+    }
+
+    // Get current time in IST
+    function getCurrentTimeIST() {
+        return new Date().toLocaleTimeString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
+    }
+
+    let currentLocation = null;
+    let locationAttempted = false;
+
+    function geoFindMe() {
+        const status = document.querySelector("#locationStatus");
+        const mapLink = document.querySelector("#map-link");
+
+        console.log('Starting location request...');
+
+        // Disable all buttons initially
+        disableEventButtons();
+
+        // Show loading state
+        status.innerHTML = `
+        <div class="d-flex align-items-center justify-content-center">
+            <div class="spinner-border spinner-border-sm me-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <strong>Requesting location access...</strong>
+        </div>
+        <div class="small mt-2 text-muted">
+            🚨 Events are DISABLED until location is enabled
+        </div>
+    `;
+        status.className = 'alert alert-info text-center mb-4';
+
+        function success(position) {
+            console.log('Location success:', position);
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+
+            // Validate coordinates
+            if (isNaN(latitude) || isNaN(longitude) || latitude === 0 || longitude === 0) {
+                error({ code: 2, message: 'Invalid coordinates received' });
+                return;
+            }
+
+            currentLocation = {
+                lat: latitude,
+                lon: longitude,
+                accuracy: accuracy,
+                timestamp: new Date().toISOString()
+            };
+
+            status.innerHTML = `
+            <div class="mb-2">
+                <i class="fas fa-check-circle text-success"></i> 
+                <strong>✅ Real-time location acquired!</strong>
+            </div>
+            <div class="small">
+                📍 Accuracy: ${Math.round(accuracy)}m | 🕒 ${getCurrentTimeIST()}
+            </div>
+        `;
+            status.className = 'alert alert-success text-center mb-4';
+
+            // Show location info
+            document.getElementById('locationInfo').style.display = 'block';
+            document.getElementById('currentLat').textContent = latitude.toFixed(6);
+            document.getElementById('currentLon').textContent = longitude.toFixed(6);
+            document.getElementById('accuracy').textContent = Math.round(accuracy) + 'm';
+
+            if (mapLink) {
+                mapLink.href = `https://www.openstreetmap.org/#map=18/${latitude}/${longitude}`;
+            }
+
+            // Enable event buttons
+            enableEventButtons();
+            updateLocationInstructions(true);
+        }
+
+        function error(err) {
+            console.error('Geolocation error:', err);
+            locationAttempted = true;
+
+            // Keep buttons disabled - NO FALLBACK
+            disableEventButtons();
+
+            let errorMessage = '';
+            let actionButtons = '';
+
+            switch (err.code) {
+                case 1: // PERMISSION_DENIED
+                    errorMessage = `
+                    <div class="mb-3">
+                        <i class="fas fa-location-slash text-danger"></i> 
+                        <strong>🚨 Location Access REQUIRED</strong>
+                    </div>
+                    <div class="alert alert-warning p-3 mb-3">
+                        <div class="mb-2"><strong>Events are DISABLED until location is enabled</strong></div>
+                        
+                        <div class="mb-3">
+                            <strong>📱 Mobile Instructions:</strong><br>
+                            1. Tap the <strong>🔒 lock/shield icon</strong> in browser address bar<br>
+                            2. Change "Location" to <strong>"Allow"</strong><br>
+                            3. Or: Settings → Safari/Chrome → Location → Enable<br>
+                            4. Refresh this page
+                        </div>
+                        
+                        <div>
+                            <strong>💻 Desktop Instructions:</strong><br>
+                            1. Click <strong>location icon (🌍)</strong> in address bar<br>
+                            2. Select <strong>"Always allow"</strong><br>
+                            3. Check browser settings → Privacy → Location
+                        </div>
+                    </div>
+                `;
+                    actionButtons = `
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" onclick="retryLocation()">
+                            <i class="fas fa-redo"></i> Retry Location Access
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="showLocationHelp()">
+                            <i class="fas fa-question-circle"></i> Location Help
+                        </button>
+                    </div>
+                `;
+                    break;
+
+                case 2: // POSITION_UNAVAILABLE
+                    errorMessage = `
+                    <div class="mb-3">
+                        <i class="fas fa-satellite-dish text-warning"></i> 
+                        <strong>🚨 GPS Signal Required</strong>
+                    </div>
+                    <div class="alert alert-warning p-3 mb-3">
+                        <div class="mb-2"><strong>Events are DISABLED until GPS works</strong></div>
+                        
+                        <strong>Please try:</strong><br>
+                        • Move outdoors or near a window<br>
+                        • Enable High Accuracy GPS in device settings<br>
+                        • Check Location Services are ON<br>
+                        • Wait for GPS to connect
+                    </div>
+                `;
+                    actionButtons = `
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" onclick="retryLocationWithHighAccuracy()">
+                            <i class="fas fa-satellite"></i> Retry High Accuracy GPS
+                        </button>
+                    </div>
+                `;
+                    break;
+
+                case 3: // TIMEOUT
+                    errorMessage = `
+                    <div class="mb-3">
+                        <i class="fas fa-clock text-warning"></i> 
+                        <strong>🚨 Location Timeout</strong>
+                    </div>
+                    <div class="alert alert-warning p-3 mb-3">
+                        <div class="mb-2"><strong>Events are DISABLED</strong></div>
+                        GPS taking too long. Move outdoors or check settings.
+                    </div>
+                `;
+                    actionButtons = `
+                    <button class="btn btn-primary" onclick="retryLocationWithHighAccuracy()">
+                        <i class="fas fa-redo"></i> Retry with Extended Timeout
+                    </button>
+                `;
+                    break;
+
+                default:
+                    errorMessage = `
+                    <div class="mb-3">
+                        <i class="fas fa-exclamation-circle text-danger"></i> 
+                        <strong>🚨 Location Error</strong>
+                    </div>
+                    <div class="alert alert-danger p-3 mb-3">
+                        Events are DISABLED. Check device settings.
+                    </div>
+                `;
+                    actionButtons = `
+                    <button class="btn btn-primary" onclick="retryLocation()">
+                        <i class="fas fa-redo"></i> Try Again
+                    </button>
+                `;
+                    break;
+            }
+
+            status.innerHTML = errorMessage + actionButtons;
+            status.className = 'alert alert-danger text-center mb-4';
+
+            updateLocationInstructions(false);
+            document.getElementById('locationInfo').style.display = 'none';
+        }
+
+        // Check if geolocation is supported
+        if (!navigator.geolocation) {
+            status.innerHTML = `
+            <div class="mb-3">
+                <i class="fas fa-times-circle text-danger"></i> 
+                <strong>🚨 Geolocation Not Supported</strong>
+            </div>
+            <div class="alert alert-danger p-3 mb-3">
+                Your browser doesn't support location services.
+            </div>
+        `;
+            status.className = 'alert alert-danger text-center mb-4';
+            disableEventButtons();
+            return;
+        }
+
+        // High accuracy options
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 60000
+        };
+
+        navigator.geolocation.getCurrentPosition(success, error, options);
+    }
+
+    function disableEventButtons() {
+        const buttons = ['loginBtn', 'upiBtn', 'app_openBtn'];
+        buttons.forEach(btnId => {
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+            }
+        });
+    }
+
+    function enableEventButtons() {
+        const buttons = ['loginBtn', 'upiBtn', 'app_openBtn'];
+        buttons.forEach(btnId => {
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            }
+        });
+    }
+
+    function updateLocationInstructions(hasLocation) {
+        const instructions = document.querySelector('.card.border-0.shadow .card-body h6');
+        if (instructions) {
+            if (hasLocation) {
+                instructions.innerHTML = '<i class="fas fa-check-circle text-success"></i> Ready to Record Events';
+                instructions.className = 'text-success mb-2';
+            } else {
+                instructions.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Location Required';
+                instructions.className = 'text-warning mb-2';
+            }
+        }
+    }
+
+    function retryLocation() {
+        geoFindMe();
+    }
+
+    function retryLocationWithHighAccuracy() {
+        const status = document.querySelector("#locationStatus");
+
+        status.innerHTML = `
+        <div class="d-flex align-items-center justify-content-center">
+            <div class="spinner-border spinner-border-sm me-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <strong>🛰️ Requesting high-accuracy GPS...</strong>
+        </div>
+    `;
+        status.className = 'alert alert-info text-center mb-4';
+
+        const highAccuracyOptions = {
+            enableHighAccuracy: true,
+            timeout: 30000,
+            maximumAge: 0
+        };
+
+        navigator.geolocation.getCurrentPosition(
+            position => {
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+
+                currentLocation = {
+                    lat: latitude,
+                    lon: longitude,
+                    accuracy: accuracy,
+                    timestamp: new Date().toISOString()
+                };
+
+                status.innerHTML = `
+                <div class="mb-2">
+                    <i class="fas fa-check-circle text-success"></i> 
+                    <strong>✅ High-precision GPS acquired!</strong>
+                </div>
+                <div class="small">
+                    🎯 Accuracy: ${Math.round(accuracy)}m | Method: High-precision
+                </div>
+            `;
+                status.className = 'alert alert-success text-center mb-4';
+
+                document.getElementById('locationInfo').style.display = 'block';
+                document.getElementById('currentLat').textContent = latitude.toFixed(6);
+                document.getElementById('currentLon').textContent = longitude.toFixed(6);
+                document.getElementById('accuracy').textContent = Math.round(accuracy) + 'm';
+
+                const mapLink = document.querySelector("#map-link");
+                if (mapLink) {
+                    mapLink.href = `https://www.openstreetmap.org/#map=18/${latitude}/${longitude}`;
+                }
+
+                enableEventButtons();
+                updateLocationInstructions(true);
+            },
+            error => {
+                status.innerHTML = `
+                <div class="mb-3">
+                    <i class="fas fa-exclamation-triangle text-danger"></i> 
+                    <strong>🚨 High-Accuracy GPS Failed</strong>
+                </div>
+                <div class="alert alert-danger p-3 mb-3">
+                    Cannot enable events without location access.
+                </div>
+                <button class="btn btn-primary" onclick="showLocationHelp()">
+                    <i class="fas fa-cog"></i> Location Help
+                </button>
+            `;
+                status.className = 'alert alert-danger text-center mb-4';
+                disableEventButtons();
+            },
+            highAccuracyOptions
+        );
+    }
+
+    function showLocationHelp() {
+        alert('🔧 Location Troubleshooting:\n\n' +
+            '📱 Mobile:\n' +
+            '• Settings → Privacy → Location Services → ON\n' +
+            '• Safari/Chrome → Location → Allow\n' +
+            '• Tap address bar lock icon → Location → Allow\n\n' +
+            '💻 Desktop:\n' +
+            '• Click location icon in address bar\n' +
+            '• Browser Settings → Privacy → Location\n' +
+            '• Allow location for this site\n\n' +
+            '🛰️ GPS:\n' +
+            '• Move outdoors or near window\n' +
+            '• Enable High Accuracy mode\n' +
+            '• Wait for GPS signal\n\n' +
+            'Then refresh and try again!');
+    }
+
+    function recordEvent(eventType) {
+        if (!currentLocation) {
+            alert('🚨 Location Required!\n\nEvents cannot be recorded without your current location.\nPlease enable GPS access first.');
+            retryLocation();
+            return;
+        }
+
+        // Verify location is recent
+        const locationAge = new Date() - new Date(currentLocation.timestamp);
+        if (locationAge > 300000) { // 5 minutes
+            alert('🚨 Location is stale!\n\nGetting fresh location...');
+            retryLocation();
+            return;
+        }
+
+        const btn = document.getElementById(eventType + 'Btn');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Recording...';
+
+        fetch('{% url "record_event" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                event_type: eventType,
+                latitude: currentLocation.lat,
+                longitude: currentLocation.lon,
+                accuracy: currentLocation.accuracy
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`✅ ${eventType.toUpperCase()} event recorded!\n\n` +
+                        `📍 Location: ${currentLocation.lat.toFixed(6)}, ${currentLocation.lon.toFixed(6)}\n` +
+                        `🎯 Accuracy: ${Math.round(currentLocation.accuracy)}m`);
+                    window.location.reload();
+                } else {
+                    alert('❌ Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('❌ Error: ' + error);
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            });
+    }
+
+    // Initialize on page load
+    window.onload = function () {
+        console.log('Page loaded, requesting location...');
+        geoFindMe();
+    };
+</script>
+{% endblock %}
