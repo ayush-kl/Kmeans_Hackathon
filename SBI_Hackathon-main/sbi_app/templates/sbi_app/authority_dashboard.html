@@ -1,0 +1,1083 @@
+{% extends 'sbi_app/base.html' %}
+{% load timezone_filters %}
+
+{% block title %}Authority Dashboard - SBI{% endblock %}
+
+{% block content %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+<script>
+    // URL variables to avoid template issues in JavaScript
+    window.URLs = {
+        process_data: '{% url "process_data" %}',
+        download_data: '{% url "download_data" %}',
+        find_user_location: '{% url "find_user_location" %}',
+        find_all_locations: '{% url "find_all_locations" %}',
+        export_user_data: '{% url "export_user_data" "USER_AADHAAR" %}'
+    };
+
+    // Utility function to format datetime in IST
+    function formatDateTimeIST(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            year: 'numeric',
+            month: 'short',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
+    }
+
+    // Utility function to format date only in IST
+    function formatDateIST(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            year: 'numeric',
+            month: 'short',
+            day: '2-digit'
+        });
+    }
+
+    // Utility function to format time only in IST
+    function formatTimeIST(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleTimeString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
+    }
+</script>
+<div class="row">
+    <!-- Header Section -->
+    <div class="col-12 mb-4">
+        <div class="card border-0 shadow">
+            <div class="card-body p-4"
+                style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white;">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2 class="text-white mb-2">
+                            <i class="fas fa-shield-alt"></i> SBI Authority Dashboard
+                        </h2>
+                        <p class="text-white-50 mb-0">
+                            <i class="fas fa-user"></i> {{ user.username }} | Real-time monitoring and analysis
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <span class="badge fs-6" style="background-color: #ff6600;">
+                            <i class="fas fa-shield-alt"></i> Authority Access
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="col-md-3 mb-4">
+        <div class="card border-0 shadow">
+            <div class="card-body text-center p-4"
+                style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white;">
+                <div class="text-white">
+                    <i class="fas fa-users fa-2x mb-2"></i>
+                    <h3 class="text-white mb-1">{{ total_users }}</h3>
+                    <p class="text-white mb-0">Total Users</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card border-0 shadow">
+            <div class="card-body text-center p-4"
+                style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white;">
+                <div class="text-white">
+                    <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                    <h3 class="text-white mb-1">{{ total_events }}</h3>
+                    <p class="text-white mb-0">Total Events</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card border-0 shadow">
+            <div class="card-body text-center p-4"
+                style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white;">
+                <div class="text-white">
+                    <i class="fas fa-clock fa-2x mb-2"></i>
+                    <h3 class="text-white mb-1">{{ recent_activity }}</h3>
+                    <p class="text-white mb-0">Last 24h Events</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card border-0 shadow">
+            <div class="card-body text-center p-4"
+                style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white;">
+                <div class="text-white">
+                    <i class="fas fa-chart-line fa-2x mb-2"></i>
+                    <h3 class="text-white mb-1">{{ recent_analyses|length }}</h3>
+                    <p class="text-white mb-0">Analyses</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="col-12 mb-4">
+        <div class="card border-0 shadow">
+            <div class="card-header border-0"
+                style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white;">
+                <h4 class="text-white mb-0">
+                    <i class="fas fa-tools"></i> Data Management
+                </h4>
+            </div>
+            <div class="card-body p-4" style="background-color: #f8f9fa;">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <a href="{% url 'download_data' %}" class="btn btn-lg w-100"
+                            style="background-color: #1e3c72; color: white; border: none;">
+                            <i class="fas fa-download"></i> Download All Data (JSON)
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <button onclick="showProcessingModal()" class="btn btn-lg w-100"
+                            style="background-color: #ff6600; color: white; border: none;">
+                            <i class="fas fa-brain"></i> Process with Kalman-Cluster
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="{% url 'all_analyses' %}" class="btn btn-success btn-lg w-100">
+                            <i class="fas fa-chart-bar"></i> View All Analyses
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Location Tracking Section -->
+    <div class="col-12 mb-4">
+        <div class="card border-0 shadow">
+            <div class="card-header border-0"
+                style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white;">
+                <h4 class="text-white mb-0">
+                    <i class="fas fa-map-marked-alt"></i> Location Tracking & Analysis
+                </h4>
+            </div>
+            <div class="card-body p-4" style="background-color: #f8f9fa;">
+                <div class="row g-3">
+                    <!-- Find Specific User -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="card-title text-primary-sbi">
+                                    <i class="fas fa-user-search"></i> Find Specific User Location
+                                </h6>
+                                <p class="card-text text-muted small">Track location history of a specific user by
+                                    Aadhaar, username, or email</p>
+                                <div class="input-group mb-3">
+                                    <input type="text" class="form-control" id="userIdentifier"
+                                        placeholder="Enter Aadhaar / Username / Email">
+                                    <button class="btn btn-primary" type="button" onclick="findUserLocation()">
+                                        <i class="fas fa-search"></i> Find
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Find All Users -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="card-title text-primary-sbi">
+                                    <i class="fas fa-users-cog"></i> All Users Location Summary
+                                </h6>
+                                <p class="card-text text-muted small">Get latest location data for all users in the
+                                    system</p>
+                                <button class="btn btn-lg w-100"
+                                    style="background-color: #28a745; color: white; border: none;"
+                                    onclick="findAllLocations()">
+                                    <i class="fas fa-globe-americas"></i> Track All Users
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Type Distribution -->
+    <div class="col-md-6 mb-4">
+        <div class="card border-0 shadow">
+            <div class="card-header border-0"
+                style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white;">
+                <h5 class="text-white mb-0">
+                    <i class="fas fa-pie-chart"></i> Event Type Distribution
+                </h5>
+            </div>
+            <div class="card-body p-4" style="background-color: #f8f9fa;">
+                {% if event_stats %}
+                {% for event in event_stats %}
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span>
+                        <i class="fas fa-circle" style="color: 
+                                    {% if event.event_type == 'login' %}#28a745
+                                    {% elif event.event_type == 'upi' %}#007bff
+                                    {% else %}#ffc107{% endif %};">
+                        </i> {{ event.event_type|upper }}
+                    </span>
+                    <span class="badge bg-secondary">{{ event.count }}</span>
+                </div>
+                <div class="progress mb-3" style="height: 8px;">
+                    <div class="progress-bar" role="progressbar" style="width: {% widthratio event.count total_events 100 %}%; background-color: 
+                                    {% if event.event_type == 'login' %}#28a745
+                                    {% elif event.event_type == 'upi' %}#007bff
+                                    {% else %}#ffc107{% endif %};">
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-white-50 text-center">No event data available</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Analyses -->
+    <div class="col-md-6 mb-4">
+        <div class="card card-custom">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="mb-0">
+                    <i class="fas fa-history"></i> Recent Analyses
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                {% if recent_analyses %}
+                <div class="list-group list-group-flush">
+                    {% for analysis in recent_analyses %}
+                    <div class="list-group-item bg-transparent border-0 p-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Analysis #{{ analysis.id }}</strong>
+                                <small class=" d-block">
+                                    {{ analysis.processed_at|date:"M d, Y H:i" }}
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                <small class="">
+                                    {{ analysis.total_users }} users<br>
+                                    {{ analysis.total_events }} events
+                                </small>
+                                <div class="mt-1">
+                                    <a href="{% url 'view_analysis' analysis.id %}"
+                                        class="btn btn-sm btn-outline-light">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-white-50 text-center">
+                    <i class="fas fa-info-circle"></i><br>
+                    No analyses performed yet.<br>
+                    <a href="{% url 'process_data' %}" class="text-warning">Process data now</a>
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Events -->
+    <div class="col-12">
+        <div class="card card-custom">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="text-white mb-0">
+                    <i class="fas fa-list"></i> Recent Events (Last 20)
+                </h5>
+            </div>
+            <div class="card-body p-4" style="background-color: #f8f9fa;">
+                {% if recent_events %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead style="background-color: #1e3c72; color: white;">
+                            <tr>
+                                <th><i class="fas fa-user"></i> User</th>
+                                <th><i class="fas fa-tag"></i> Event Type</th>
+                                <th><i class="fas fa-clock"></i> Timestamp</th>
+                                <th><i class="fas fa-map-marker-alt"></i> Location</th>
+                                <th><i class="fas fa-crosshairs"></i> Accuracy</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for event in recent_events %}
+                            <tr>
+                                <td>
+                                    <div>
+                                        <strong>{{ event.user.first_name }} {{ event.user.last_name }}</strong>
+                                        <small class="text-muted d-block">{{ event.user.aadhaar_number }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge" style="background-color: 
+                                                {% if event.event_type == 'login' %}#28a745
+                                                {% elif event.event_type == 'upi' %}#007bff
+                                                {% else %}#ff6600{% endif %};">
+                                        {{ event.event_type|upper }}
+                                    </span>
+                                </td>
+                                <td>{{ event.timestamp|ist_datetime }}</td>
+                                <td>
+                                    <a href="https://www.openstreetmap.org/#map=18/{{ event.latitude }}/{{ event.longitude }}"
+                                        target="_blank" style="color: #1e3c72;" class="text-decoration-none">
+                                        {{ event.latitude|floatformat:4 }}, {{ event.longitude|floatformat:4 }}
+                                    </a>
+                                </td>
+                                <td>{{ event.location_accuracy|floatformat:0 }}m</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">
+                    <i class="fas fa-info-circle"></i> No events recorded yet.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Processing Modal -->
+<div class="modal fade" id="processingModal" tabindex="-1" aria-labelledby="processingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #1e3c72; color: white;">
+                <h5 class="modal-title" id="processingModalLabel">
+                    <i class="fas fa-brain"></i> Kalman-Cluster Fusion Processing
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="processingStatus">
+                    <div class="text-center mb-3">
+                        <div class="spinner-border" style="color: #1e3c72;" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <p class="text-center">
+                        <strong>Starting Kalman-Cluster Fusion Analysis...</strong><br>
+                        <small class="text-muted">This may take a few moments to process all user events.</small>
+                    </p>
+                    <div class="progress">
+                        <div class="progress-bar" style="background-color: #1e3c72;" role="progressbar"
+                            style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+                <div id="processingResults" style="display: none;">
+                    <!-- Results will be displayed here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn" style="background-color: #1e3c72; color: white;"
+                    onclick="downloadResults()" id="downloadBtn" style="display: none;">
+                    <i class="fas fa-download"></i> Download Results
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Get CSRF token
+    function getCSRFToken() {
+        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        console.log('CSRF token retrieved:', token ? 'Token found' : 'Token not found');
+        return token;
+    }
+
+    // Document ready function
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('DOM loaded - checking button functionality');
+
+        // Check if buttons exist
+        const processBtn = document.querySelector('button[onclick="showProcessingModal()"]');
+        const findUserBtn = document.querySelector('button[onclick="findUserLocation()"]');
+        const trackAllBtn = document.querySelector('button[onclick="findAllLocations()"]');
+
+        console.log('Process button exists:', !!processBtn);
+        console.log('Find user button exists:', !!findUserBtn);
+        console.log('Track all button exists:', !!trackAllBtn);
+
+        // Check if modals exist
+        const processingModal = document.getElementById('processingModal');
+        const locationModal = document.getElementById('locationModal');
+        console.log('Processing modal exists:', !!processingModal);
+        console.log('Location modal exists:', !!locationModal);
+
+        // Test CSRF token
+        console.log('CSRF token available:', !!getCSRFToken());
+
+        // Test if functions are defined
+        console.log('showProcessingModal defined:', typeof showProcessingModal === 'function');
+        console.log('findUserLocation defined:', typeof findUserLocation === 'function');
+        console.log('findAllLocations defined:', typeof findAllLocations === 'function');
+    });
+
+    function showProcessingModal() {
+        console.log('showProcessingModal called');
+        try {
+            const modal = new bootstrap.Modal(document.getElementById('processingModal'));
+            modal.show();
+
+            // Reset modal state
+            document.getElementById('processingStatus').style.display = 'block';
+            document.getElementById('processingResults').style.display = 'none';
+            const downloadBtn = document.getElementById('downloadBtn');
+            if (downloadBtn) downloadBtn.style.display = 'none';
+
+            // Start processing
+            setTimeout(() => {
+                processData();
+            }, 500);
+        } catch (error) {
+            console.error('Error in showProcessingModal:', error);
+            alert('Error opening processing modal: ' + error.message);
+        }
+    }
+
+    function processData() {
+        console.log('processData called');
+        try {
+            const progressBar = document.querySelector('.progress-bar');
+            const statusText = document.querySelector('#processingStatus p');
+
+            // Simulate progress
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 20;
+                if (progress > 90) progress = 90;
+                if (progressBar) {
+                    progressBar.style.width = progress + '%';
+                    progressBar.setAttribute('aria-valuenow', progress);
+                }
+            }, 200);
+
+            console.log('Making request to process_data endpoint...');
+
+            // Make actual request
+            fetch(window.URLs.process_data, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCSRFToken()
+                }
+            })
+                .then(response => {
+                    console.log('Process data response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Process data response:', data);
+                    clearInterval(progressInterval);
+                    if (progressBar) {
+                        progressBar.style.width = '100%';
+                        progressBar.setAttribute('aria-valuenow', 100);
+                    }
+
+                    setTimeout(() => {
+                        if (data.success) {
+                            displayResults(data);
+                        } else {
+                            displayError(data.error || 'Processing failed');
+                        }
+                    }, 500);
+                })
+                .catch(error => {
+                    console.error('Process data error:', error);
+                    clearInterval(progressInterval);
+                    displayError('Network error: ' + error.message);
+                });
+        } catch (error) {
+            console.error('Error in processData:', error);
+            displayError('Error: ' + error.message);
+        }
+    }
+
+    function displayResults(data) {
+        document.getElementById('processingStatus').style.display = 'none';
+        document.getElementById('processingResults').style.display = 'block';
+        document.getElementById('downloadBtn').style.display = 'inline-block';
+
+        const resultsHtml = `
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i> <strong>Processing Complete!</strong>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <h6><i class="fas fa-chart-bar"></i> Analysis Summary:</h6>
+                <ul class="list-unstyled">
+                    <li><strong>Events Processed:</strong> ${data.events_processed || 'N/A'}</li>
+                    <li><strong>Users Analyzed:</strong> ${data.users_analyzed || 'N/A'}</li>
+                    <li><strong>Processing Time:</strong> ${data.processing_time || 'N/A'}</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="fas fa-brain"></i> Algorithm Results:</h6>
+                <ul class="list-unstyled">
+                    <li><strong>Clusters Found:</strong> ${data.clusters_found || 'N/A'}</li>
+                    <li><strong>Anomalies Detected:</strong> ${data.anomalies || 'N/A'}</li>
+                    <li><strong>Confidence Score:</strong> ${data.confidence || 'N/A'}%</li>
+                </ul>
+            </div>
+        </div>
+        ${data.results ? '<pre class="bg-light p-3 mt-3 small">' + JSON.stringify(data.results, null, 2) + '</pre>' : ''}
+    `;
+
+        document.getElementById('processingResults').innerHTML = resultsHtml;
+    }
+
+    function displayError(error) {
+        document.getElementById('processingStatus').style.display = 'none';
+        document.getElementById('processingResults').style.display = 'block';
+
+        document.getElementById('processingResults').innerHTML = `
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle"></i> <strong>Processing Error:</strong><br>
+            ${error}
+        </div>
+        <p class="text-muted">Please try again or contact support if the issue persists.</p>
+    `;
+    }
+
+    function downloadResults() {
+        window.location.href = window.URLs.download_data;
+    }
+
+    // Location Tracking Functions
+    function findUserLocation() {
+        console.log('findUserLocation called');
+        const userIdentifier = document.getElementById('userIdentifier').value.trim();
+        console.log('User identifier:', userIdentifier);
+
+        if (!userIdentifier) {
+            alert('Please enter a user identifier (Aadhaar, username, or email)');
+            return;
+        }
+
+        try {
+            const modal = new bootstrap.Modal(document.getElementById('locationModal'));
+            modal.show();
+
+            document.getElementById('locationModalLabel').textContent = 'Finding User Location...';
+            document.getElementById('locationResults').innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Searching for user: <strong>${userIdentifier}</strong></p>
+                <p class="mt-2 text-muted">Processing with Kalman-Cluster algorithm...</p>
+            </div>
+        `;
+
+            console.log('Making fetch request to:', window.URLs.find_user_location);
+
+            fetch(window.URLs.find_user_location, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    user_identifier: userIdentifier
+                })
+            })
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Response data:', data);
+                    document.getElementById('locationModalLabel').textContent = 'User Location Results';
+                    if (data.success) {
+                        displayUserLocationResults(data);
+                    } else {
+                        document.getElementById('locationResults').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> ${data.error}
+                    </div>
+                `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    document.getElementById('locationResults').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> Network error: ${error.message}
+                </div>
+            `;
+                });
+        } catch (error) {
+            console.error('Function error:', error);
+            alert('Error: ' + error.message);
+        }
+    }
+
+    function findAllLocations() {
+        console.log('findAllLocations called');
+
+        try {
+            const modal = new bootstrap.Modal(document.getElementById('locationModal'));
+            modal.show();
+
+            document.getElementById('locationModalLabel').textContent = 'Finding All User Locations...';
+            document.getElementById('locationResults').innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Fetching location data for all users...</p>
+                <p class="mt-2 text-muted">Processing with Kalman-Cluster algorithm...</p>
+            </div>
+        `;
+
+            console.log('Making fetch request to:', window.URLs.find_all_locations);
+
+            fetch(window.URLs.find_all_locations, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Response data:', data);
+                    document.getElementById('locationModalLabel').textContent = 'All Users Location Summary';
+                    if (data.success) {
+                        displayAllLocationResults(data);
+                    } else {
+                        document.getElementById('locationResults').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> ${data.error}
+                    </div>
+                `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    document.getElementById('locationResults').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> Network error: ${error.message}
+                </div>
+            `;
+                });
+        } catch (error) {
+            console.error('Function error:', error);
+            alert('Error: ' + error.message);
+        }
+    }
+
+    function displayUserLocationResults(data) {
+        const user = data.user_info;
+        const events = data.events || [];
+        const prediction = data.predicted_location;
+        const rawLocation = data.latest_raw_location;
+        const kalmanProcessing = data.kalman_processing;
+        const processingError = data.processing_error;
+
+        let html = `
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i> <strong>User Found!</strong>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <h6><i class="fas fa-user"></i> User Information:</h6>
+                <ul class="list-unstyled">
+                    <li><strong>Name:</strong> ${user.name}</li>
+                    <li><strong>Aadhaar:</strong> ${user.aadhaar}</li>
+                    <li><strong>Username:</strong> ${user.username}</li>
+                    <li><strong>Email:</strong> ${user.email}</li>
+                    <li><strong>Status:</strong> <span class="badge ${user.is_defaulter ? 'bg-warning' : 'bg-success'}">${user.is_defaulter ? 'Defaulter' : 'Regular'}</span></li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="fas fa-chart-bar"></i> Location Summary:</h6>
+                <ul class="list-unstyled">
+                    <li><strong>Total Events:</strong> ${data.total_events}</li>
+                    <li><strong>Events Shown:</strong> ${events.length}</li>
+                    <li><strong>Algorithm Status:</strong> 
+                        <span class="badge ${processingError ? 'bg-danger' : 'bg-success'}">
+                            ${processingError ? 'Processing Error' : 'Processed Successfully'}
+                        </span>
+                    </li>
+                </ul>
+        `;
+
+        // Display Kalman-Cluster Prediction
+        if (prediction && !processingError) {
+            html += `
+                <h6 class="mt-3"><i class="fas fa-brain"></i> Kalman-Cluster Prediction:</h6>
+                <div class="alert alert-info">
+                    <ul class="list-unstyled mb-0">
+                        <li><strong>Predicted Location:</strong> ${prediction.latitude.toFixed(6)}, ${prediction.longitude.toFixed(6)}</li>
+                        <li><strong>Confidence:</strong> ${(prediction.confidence * 100).toFixed(1)}%</li>
+                        <li><strong>Prediction Type:</strong> <span class="badge bg-primary">${prediction.prediction_type.replace('_', ' ').toUpperCase()}</span></li>
+                        <li><strong>Events Used:</strong> ${prediction.event_count_used}</li>
+                        ${prediction.cluster_id !== null ? '<li><strong>Cluster ID:</strong> ' + prediction.cluster_id + '</li>' : ''}
+                        <li><strong>Map Link:</strong> <a href="https://www.openstreetmap.org/#map=18/${prediction.latitude}/${prediction.longitude}" target="_blank" class="btn btn-sm btn-outline-primary">View Predicted Location</a></li>
+                    </ul>
+                </div>
+            `;
+        } else if (processingError) {
+            html += `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> Algorithm processing failed: ${processingError}
+                </div>
+            `;
+        }
+
+        // Display Raw Location for comparison
+        if (rawLocation) {
+            html += `
+                <h6 class="mt-3"><i class="fas fa-map-marker-alt"></i> Latest Raw Location:</h6>
+                <ul class="list-unstyled">
+                    <li><strong>Coordinates:</strong> ${rawLocation.latitude.toFixed(6)}, ${rawLocation.longitude.toFixed(6)}</li>
+                    <li><strong>Event Type:</strong> <span class="badge bg-info">${rawLocation.event_type.toUpperCase()}</span></li>
+                    <li><strong>Accuracy:</strong> ${rawLocation.accuracy.toFixed(0)}m</li>
+                    <li><strong>Timestamp:</strong> ${formatDateTimeIST(rawLocation.timestamp)}</li>
+                    <li><strong>Map Link:</strong> <a href="https://www.openstreetmap.org/#map=18/${rawLocation.latitude}/${rawLocation.longitude}" target="_blank" class="btn btn-sm btn-outline-secondary">View Raw Location</a></li>
+                </ul>
+        `;
+        } else {
+            html += `<p class="text-muted">No location events found for this user.</p>`;
+        }
+
+        // Add export button
+        html += `
+                <div class="mt-3">
+                    <button class="btn btn-warning" onclick="exportUserData('${user.aadhaar}')">
+                        <i class="fas fa-download"></i> Export User Data
+                    </button>
+                </div>
+            </div>
+        </div>
+        `;
+
+        // Display processing summary if available
+        if (kalmanProcessing && kalmanProcessing.summary) {
+            const summary = kalmanProcessing.summary;
+            html += `
+                <div class="mt-4">
+                    <h6><i class="fas fa-analytics"></i> Algorithm Processing Summary:</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li><strong>Total Events Processed:</strong> ${summary.total_events}</li>
+                                <li><strong>Total Users:</strong> ${summary.total_users}</li>
+                                <li><strong>Clusters Found:</strong> ${summary.total_clusters}</li>
+                                <li><strong>Noise Points:</strong> ${summary.noise_points}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Event Distribution:</strong>
+                            <ul class="list-unstyled">
+            `;
+
+            for (const [eventType, count] of Object.entries(summary.event_distribution)) {
+                html += `<li>${eventType.toUpperCase()}: ${count}</li>`;
+            }
+
+            html += `
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (events.length > 0) {
+            html += `
+            <h6><i class="fas fa-history"></i> Recent Events:</h6>
+            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-sm table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Event Type</th>
+                            <th>Location</th>
+                            <th>Timestamp</th>
+                            <th>Accuracy</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+            events.forEach(event => {
+                html += `
+                <tr>
+                    <td><span class="badge bg-secondary">${event.event_type.toUpperCase()}</span></td>
+                    <td>
+                        <a href="https://www.openstreetmap.org/#map=18/${event.latitude}/${event.longitude}" target="_blank" class="text-decoration-none">
+                            ${event.latitude.toFixed(4)}, ${event.longitude.toFixed(4)}
+                        </a>
+                    </td>
+                    <td>${formatDateTimeIST(event.timestamp)}</td>
+                    <td>${event.accuracy.toFixed(0)}m</td>
+                </tr>
+            `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        }
+
+        document.getElementById('locationResults').innerHTML = html;
+    }
+
+    function displayAllLocationResults(data) {
+        const users = data.users;
+        const summary = data.processing_summary;
+        const clusterInfo = data.cluster_info;
+        const processingError = data.processing_error;
+
+        let html = `
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> <strong>Summary:</strong> ${data.total_users} total users, 
+            ${data.users_with_raw_location} with raw location data, 
+            ${data.users_with_predictions} with algorithm predictions
+        </div>
+        `;
+
+        // Show processing summary if available
+        if (summary) {
+            html += `
+            <div class="alert alert-success">
+                <h6><i class="fas fa-brain"></i> Kalman-Cluster Algorithm Results:</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled mb-0">
+                            <li><strong>Events Processed:</strong> ${summary.total_events}</li>
+                            <li><strong>Users Analyzed:</strong> ${summary.total_users}</li>
+                            <li><strong>Clusters Found:</strong> ${summary.total_clusters}</li>
+                            <li><strong>Noise Points:</strong> ${summary.noise_points}</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Event Types:</strong>
+                        <ul class="list-unstyled mb-0">
+            `;
+
+            for (const [eventType, count] of Object.entries(summary.event_distribution)) {
+                html += `<li>${eventType.toUpperCase()}: ${count}</li>`;
+            }
+
+            html += `
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            `;
+        } else if (processingError) {
+            html += `
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i> Algorithm processing failed: ${processingError}
+            </div>
+            `;
+        }
+
+        html += `
+        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+            <table class="table table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>Aadhaar</th>
+                        <th>Status</th>
+                        <th>Predicted Location</th>
+                        <th>Raw Location</th>
+                        <th>Events</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        users.forEach(user => {
+            const rawLocation = user.latest_raw_location;
+            const prediction = user.predicted_location;
+
+            html += `
+            <tr>
+                <td>
+                    <strong>${user.name}</strong><br>
+                    <small class="text-muted">${user.username}</small>
+                </td>
+                <td>${user.aadhaar}</td>
+                <td>
+                    <span class="badge ${user.is_defaulter ? 'bg-warning' : 'bg-success'}">
+                        ${user.is_defaulter ? 'Defaulter' : 'Regular'}
+                    </span>
+                </td>
+                <td>
+            `;
+
+            if (prediction) {
+                html += `
+                    <a href="https://www.openstreetmap.org/#map=18/${prediction.latitude}/${prediction.longitude}" target="_blank" class="text-decoration-none">
+                        ${prediction.latitude.toFixed(4)}, ${prediction.longitude.toFixed(4)}
+                    </a><br>
+                    <small class="text-success">
+                        <i class="fas fa-brain"></i> ${(prediction.confidence * 100).toFixed(0)}% confidence
+                        ${prediction.cluster_id !== null ? ' | Cluster ' + prediction.cluster_id : ''}
+                    </small>
+                `;
+            } else {
+                html += `<small class="text-muted">No prediction</small>`;
+            }
+
+            html += `
+                </td>
+                <td>
+            `;
+
+            if (rawLocation) {
+                html += `
+                    <a href="https://www.openstreetmap.org/#map=18/${rawLocation.latitude}/${rawLocation.longitude}" target="_blank" class="text-decoration-none">
+                        ${rawLocation.latitude.toFixed(4)}, ${rawLocation.longitude.toFixed(4)}
+                    </a><br>
+                    <small class="text-muted">
+                        <span class="badge bg-secondary">${rawLocation.event_type.toUpperCase()}</span>
+                        ${formatDateIST(rawLocation.timestamp)}
+                    </small>
+                `;
+            } else {
+                html += `<small class="text-muted">No data</small>`;
+            }
+
+            html += `
+                </td>
+                <td class="text-center">
+                    <span class="badge bg-info">${user.total_events}</span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="searchSpecificUser('${user.aadhaar}')">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning" onclick="exportUserData('${user.aadhaar}')">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </td>
+            </tr>
+            `;
+        });
+
+        html += `
+                </tbody>
+            </table>
+        </div>
+        `;
+
+        // Show cluster information if available
+        if (clusterInfo && Object.keys(clusterInfo).length > 0) {
+            html += `
+            <div class="mt-4">
+                <h6><i class="fas fa-layer-group"></i> Cluster Analysis:</h6>
+                <div class="row">
+            `;
+
+            for (const [clusterKey, cluster] of Object.entries(clusterInfo)) {
+                html += `
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">Cluster ${cluster.cluster_id}</h6>
+                            <ul class="list-unstyled mb-0">
+                                <li><strong>Events:</strong> ${cluster.event_count}</li>
+                                <li><strong>Users:</strong> ${cluster.user_count}</li>
+                                <li><strong>Center:</strong> 
+                                    <a href="https://www.openstreetmap.org/#map=18/${cluster.centroid.lat}/${cluster.centroid.lon}" target="_blank">
+                                        ${cluster.centroid.lat.toFixed(4)}, ${cluster.centroid.lon.toFixed(4)}
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }
+
+            html += `
+                </div>
+            </div>
+            `;
+        }
+
+        document.getElementById('locationResults').innerHTML = html;
+    }
+    function searchSpecificUser(aadhaar) {
+        document.getElementById('userIdentifier').value = aadhaar;
+        bootstrap.Modal.getInstance(document.getElementById('locationModal')).hide();
+        setTimeout(() => findUserLocation(), 300);
+    }
+
+    function exportUserData(aadhaar) {
+        window.open(window.URLs.export_user_data.replace('USER_AADHAAR', aadhaar), '_blank');
+    }
+</script>
+
+<!-- Location Tracking Modal -->
+<div class="modal fade" id="locationModal" tabindex="-1" aria-labelledby="locationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #1e3c72; color: white;">
+                <h5 class="modal-title" id="locationModalLabel">
+                    <i class="fas fa-map-marked-alt"></i> Location Tracking Results
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="locationResults">
+                    <!-- Results will be displayed here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

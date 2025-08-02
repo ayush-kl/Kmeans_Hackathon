@@ -1,0 +1,57 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block title %}Confirm Delete All {{ model_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label='sbi_app' %}">SBI App</a>
+    &rsaquo; Confirm Delete All {{ model_name }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="deleteconfirmation">
+    <h1>Confirm Delete All {{ model_name }}</h1>
+
+    <div class="warning">
+        <p><strong>Warning:</strong> This action will permanently delete ALL {{ model_name|lower }} records from the
+            database.</p>
+        {% if model_name == 'Users' %}
+        <p><strong>Note:</strong> Superusers and authority users will be preserved.</p>
+        {% endif %}
+        <p>This action cannot be undone!</p>
+    </div>
+
+    <form method="post" style="margin-top: 20px;">
+        {% csrf_token %}
+        <div>
+            <input type="submit" value="Yes, I'm sure" class="default"
+                style="background: #ba2121; color: white; padding: 10px 20px; border: none; border-radius: 4px; margin-right: 10px;">
+            <a href="javascript:history.back()" class="button cancel-link"
+                style="background: #417690; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .warning {
+        background: #ffeaa7;
+        border: 1px solid #fdcb6e;
+        border-radius: 4px;
+        padding: 15px;
+        margin: 20px 0;
+    }
+
+    .warning p {
+        margin: 5px 0;
+        color: #d63031;
+        font-weight: bold;
+    }
+
+    .deleteconfirmation h1 {
+        color: #d63031;
+    }
+</style>
+{% endblock %}

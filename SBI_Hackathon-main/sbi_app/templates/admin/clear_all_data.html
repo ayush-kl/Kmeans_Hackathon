@@ -1,0 +1,113 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block title %}Clear All Application Data{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home</a>
+    &rsaquo; Clear All Application Data
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="deleteconfirmation">
+    <h1>🗑️ Clear All Application Data</h1>
+
+    <div class="data-summary"
+        style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3>Current Data Summary:</h3>
+        <ul>
+            <li><strong>Regular Users:</strong> {{ user_count }} (Superusers and authorities will be preserved)</li>
+            <li><strong>User Events:</strong> {{ event_count }}</li>
+            <li><strong>Processed Data Records:</strong> {{ processed_count }}</li>
+        </ul>
+    </div>
+
+    <div class="warning"
+        style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 20px; margin: 20px 0;">
+        <h3 style="color: #d63031; margin-bottom: 15px;">⚠️ WARNING</h3>
+        <ul style="color: #856404; margin: 0; padding-left: 20px;">
+            <li><strong>This will permanently delete ALL application data</strong></li>
+            <li>Regular users will be deleted (admin and authority accounts preserved)</li>
+            <li>All user events will be deleted</li>
+            <li>All processed data will be deleted</li>
+            <li><strong>This action CANNOT be undone!</strong></li>
+        </ul>
+    </div>
+
+    <div class="preserved-data"
+        style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 4px; padding: 15px; margin: 20px 0;">
+        <h4 style="color: #0c5460; margin-bottom: 10px;">✅ Data That Will Be Preserved:</h4>
+        <ul style="color: #0c5460; margin: 0; padding-left: 20px;">
+            <li>Superuser accounts</li>
+            <li>Authority user accounts</li>
+            <li>Event weight configurations</li>
+            <li>Application settings</li>
+        </ul>
+    </div>
+
+    <form method="post" style="margin-top: 30px;">
+        {% csrf_token %}
+        <div>
+            <input type="submit" value="🗑️ Yes, Clear All Data" class="default"
+                style="background: #d63031; color: white; padding: 12px 25px; border: none; border-radius: 4px; margin-right: 15px; font-size: 16px; cursor: pointer;"
+                onclick="return confirm('Are you absolutely sure? This will delete all application data and cannot be undone!')">
+            <a href="/admin/" class="button cancel-link"
+                style="background: #6c757d; color: white; padding: 12px 25px; text-decoration: none; border-radius: 4px; font-size: 16px;">
+                ← Cancel and Go Back
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .deleteconfirmation h1 {
+        color: #d63031;
+        margin-bottom: 20px;
+    }
+
+    .data-summary h3 {
+        color: #495057;
+        margin-bottom: 15px;
+    }
+
+    .data-summary ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+
+    .data-summary li {
+        margin: 8px 0;
+        font-size: 14px;
+    }
+
+    .warning h3 {
+        color: #d63031 !important;
+    }
+
+    input[type="submit"]:hover {
+        background: #b71c1c !important;
+    }
+
+    .button:hover {
+        background: #5a6268 !important;
+        color: white !important;
+        text-decoration: none;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const submitBtn = document.querySelector('input[type="submit"]');
+        if (submitBtn) {
+            submitBtn.addEventListener('mouseover', function () {
+                this.style.transform = 'scale(1.02)';
+            });
+            submitBtn.addEventListener('mouseout', function () {
+                this.style.transform = 'scale(1)';
+            });
+        }
+    });
+</script>
+{% endblock %}
