@@ -4,11 +4,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const SIMULATION_RUNS = 100;
+const NIGHT_HOURS = [20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6];
 const DISTANCE_THRESHOLD_KM = 50;
 const TIME_THRESHOLD_MIN = 5;
-const MIN_SESSION_GAP_MINUTES = 30;
-const NIGHT_HOURS = [20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6];
 
 function haversine(a, b) {
   const R = 6371;
@@ -17,7 +15,6 @@ function haversine(a, b) {
   const dLon = toRad(b.lon - a.lon);
   const lat1 = toRad(a.lat);
   const lat2 = toRad(b.lat);
-
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
 }
@@ -74,112 +71,84 @@ function insertMerchantVirtualTowers(logs) {
   return enriched.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 }
 
-function buildSessions(logs) {
-  const sessions = [];
-  let current = [];
-  for (let i = 0; i < logs.length; i++) {
-    if (current.length === 0) {
-      current.push(logs[i]);
-    } else {
-      const last = current[current.length - 1];
-      const gap = minutesDiff(last.timestamp, logs[i].timestamp);
-      if (gap > MIN_SESSION_GAP_MINUTES) {
-        sessions.push(current);
-        current = [logs[i]];
-      } else {
-        current.push(logs[i]);
-      }
-    }
-  }
-  if (current.length > 0) sessions.push(current);
-  return sessions;
-}
+function inferMissingTowerCoords(towerCoords, logs) {
+  const inferred = { ...towerCoords };
+  const connections = {};
 
-function simulateMovementWeighted(logs) {
-  const transitions = {};
   for (let i = 0; i < logs.length - 1; i++) {
-    const from = logs[i].tower_id;
-    const to = logs[i + 1].tower_id;
-    const dur = (new Date(logs[i + 1].timestamp) - new Date(logs[i].timestamp)) / 1000;
-
-    if (!transitions[from]) transitions[from] = {};
-    transitions[from][to] = (transitions[from][to] || 0) + dur;
-
-    if (!transitions[to]) transitions[to] = {};
-    transitions[to][from] = (transitions[to][from] || 0) + dur;
-  }
-
-  // Normalize
-  for (const from in transitions) {
-    const total = Object.values(transitions[from]).reduce((a, b) => a + b, 0);
-    for (const to in transitions[from]) {
-      transitions[from][to] /= total;
+    const a = logs[i].tower_id;
+    const b = logs[i + 1].tower_id;
+    if (!connections[a]) connections[a] = new Set();
+    if (!connections[b]) connections[b] = new Set();
+    if(a==b){
+      continue;
     }
+    connections[a].add(b);
+    connections[b].add(a);
   }
 
-  const start = logs[logs.length - 1].tower_id;
-  const simulations = [];
+  for (const tower in connections) {
+    if (inferred[tower]) continue;
+    const neighbors = [...connections[tower]].filter(n => inferred[n]);
+    if (neighbors.length < 3) continue;
 
-  for (let i = 0; i < SIMULATION_RUNS; i++) {
-    let curr = start;
-    for (let j = 0; j < 5; j++) {
-      const options = transitions[curr];
-      if (!options) break;
-      const rand = Math.random();
-      let sum = 0;
-      for (const [next, prob] of Object.entries(options)) {
-        sum += prob;
-        if (rand <= sum) {
-          curr = next;
-          break;
-        }
-      }
+    let x = 0, y = 0, wSum = 0;
+    for (const n of neighbors) {
+      const dist = 1 / Math.sqrt(1 + haversine({ lat: 0, lon: 0 }, inferred[n]));
+      x += inferred[n].lat * dist;
+      y += inferred[n].lon * dist;
+      wSum += dist;
     }
-    simulations.push(curr);
+    inferred[tower] = { lat: x / wSum, lon: y / wSum };
   }
 
-  const freq = {};
-  simulations.forEach(t => (freq[t] = (freq[t] || 0) + 1));
-  const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
-  return {
-    mostLikely: sorted[0][0],
-    simulationStats: sorted.map(([t, c]) => ({ tower: t, count: c }))
-  };
+  return inferred;
+}
+function toIST(dateStr) {
+  const date = new Date(dateStr);
+  return new Date(date.getTime() + 5.5 * 60 * 60 * 1000);
 }
 
 function inferLocation(logs, towerCoords) {
+  const now = toIST(new Date());
+
+  // console.log(now);
   const filtered = filterNoisyTowerLogs(logs, towerCoords);
   const enriched = insertMerchantVirtualTowers(filtered);
-  const sessions = buildSessions(enriched);
-  const now = new Date(enriched[enriched.length - 1].timestamp);
+  const towerScores = {};
+  const transitions = {};
 
-  const nodeScores = {};
-  for (const session of sessions) {
-    for (let i = 0; i < session.length - 1; i++) {
-      const a = session[i];
-      const b = session[i + 1];
-      const t = a.tower_id;
-      const dur = (new Date(b.timestamp) - new Date(a.timestamp)) / 1000;
+  for (let i = 0; i < enriched.length - 1; i++) {
+    const a = enriched[i];
+    const b = enriched[i + 1];
+    const dur = (new Date(b.timestamp) - new Date(a.timestamp)) / 1000;
+    const t = a.tower_id;
 
-      if (!nodeScores[t]) {
-        nodeScores[t] = {
-          totalDuration: 0,
-          count: 0,
-          nightCount: 0,
-          merchantHits: 0,
-          lastSeen: new Date(a.timestamp),
-        };
-      }
-
-      nodeScores[t].totalDuration += dur;
-      nodeScores[t].count += 1;
-      if (a.merchant) nodeScores[t].merchantHits += 1;
-      if (isNightTime(a.timestamp)) nodeScores[t].nightCount += 1;
-      nodeScores[t].lastSeen = new Date(a.timestamp);
+    if (!towerScores[t]) {
+      towerScores[t] = {
+        totalDuration: 0,
+        count: 0,
+        nightCount: 0,
+        merchantHits: 0,
+        lastSeen: new Date(a.timestamp),
+      };
     }
+  //  console.log(enriched);
+    towerScores[t].totalDuration += dur;
+    towerScores[t].count += 1;
+    if (a.merchant) towerScores[t].merchantHits += 1;
+    if (isNightTime(a.timestamp)) towerScores[t].nightCount += 1;
+    towerScores[t].lastSeen = new Date(a.timestamp);
+
+    const from = a.tower_id, to = b.tower_id;
+    if(from == to){
+      continue;
+    }
+    if (!transitions[from]) transitions[from] = {};
+    transitions[from][to] = (transitions[from][to] || 0) + dur;
   }
 
-  const scores = Object.entries(nodeScores).map(([id, s]) => {
+  const scores = Object.entries(towerScores).map(([id, s]) => {
     const recency = (now - s.lastSeen) / 1000;
     const score =
       0.35 * Math.log(s.totalDuration + 1) +
@@ -191,21 +160,83 @@ function inferLocation(logs, towerCoords) {
   });
 
   scores.sort((a, b) => b.score - a.score);
-  const sim = simulateMovementWeighted(enriched);
+  // console.log(now);
+ const currentWindow = enriched.filter(l => {
+  const logTime = toIST(l.timestamp);
+  const nwTime = new Date();
+  const nowTime = toIST(nwTime);
+console.log(logTime);
+  const logMinutes = logTime.getHours() * 60 + logTime.getMinutes();
+  const nowMinutes = nowTime.getHours() * 60 + nowTime.getMinutes();
+
+  const diff = Math.abs(logMinutes - nowMinutes);
+  return diff <= 60;
+});
+  console.log(currentWindow);
+  
+  console.log(currentWindow.length);
+
+
+  let currentTower = null;
+// console.log(currentWindow.length);
+if (currentWindow.length) {
+  currentTower = currentWindow[currentWindow.length - 1].tower_id;
+} else {
+  const recent = enriched
+    .filter(l => {
+  const logTime = toIST(l.timestamp);
+   const nwTime = new Date();
+  const nowTime = toIST(nwTime);
+
+  const logMinutes = logTime.getHours() * 60 + logTime.getMinutes();
+  const nowMinutes = nowTime.getHours() * 60 + nowTime.getMinutes();
+
+  const diff = Math.abs(logMinutes - nowMinutes);
+  return diff <= 180;}) // 3 hours
+    .sort((a, b) => new Date((a.timestamp)) - new Date((b.timestamp)));
+  if (recent.length) currentTower = recent[recent.length - 1].tower_id;
+}
+
+  let nextTower = null;
+  if (currentTower && transitions[currentTower]) {
+    const sorted = Object.entries(transitions[currentTower])
+      .sort((a, b) => b[1] - a[1]);
+    if (sorted.length > 0) nextTower = sorted[0][0];
+  }
 
   return {
     topTowers: scores.slice(0, 5).map(s => s.tower_id),
     scores,
-    simulatedLikely: sim.mostLikely,
-    simulationStats: sim.simulationStats
+    currentTower,
+    nextLikelyTower: nextTower
   };
 }
+const { readData, writeData } = require("./utils/db");
+
+app.post("/api/uploadnewdata", (req, res) => {
+  const newRecords = req.body;
+  const currentData = readData();
+  writeData([...currentData, ...newRecords]);
+  res.send({ status: "Saved", count: newRecords.length });
+});
+
+app.post("/api/lookup-by-phone", (req, res) => {
+  const { phone } = req.body;
+//  console.log(phone);
+  const allData = readData();
+  const logs = allData.filter((r) => r.phone === phone);
+   // use same logic
+ //  console.log(logs);
+  res.json(logs);
+});
 
 app.post("/api/upload", (req, res) => {
-  const data = req.body;
-  const result = {};
-  const towerCoords = {};
 
+  const data = req.body;
+ //   console.log(data);
+  const towerCoords = {};
+  const result = {};
+  //console.log(data);
   data.forEach(rec => {
     if (rec.tower_id && rec.lat && rec.lon && !rec.merchant) {
       towerCoords[rec.tower_id] = { lat: rec.lat, lon: rec.lon };
@@ -224,12 +255,14 @@ app.post("/api/upload", (req, res) => {
       .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
     if (logs.length === 0) continue;
-    const out = inferLocation(logs, towerCoords);
+
+    const inferredCoords = inferMissingTowerCoords(towerCoords, logs);
+    const out = inferLocation(logs, inferredCoords);
 
     result[id] = {
       topTowers: out.topTowers,
-      simulated: out.simulatedLikely,
-      stats: out.simulationStats,
+      current: out.currentTower,
+      next: out.nextLikelyTower,
       detailed: out.scores
     };
   }
