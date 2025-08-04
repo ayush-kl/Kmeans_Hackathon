@@ -433,5 +433,3 @@ DEBUG = False                    # Production mode
 ALLOWED_HOSTS = ['yourdomain.com']
 TIME_ZONE = 'Asia/Kolkata'       # IST timezone
 ```
-
-**Built with ❤️ for SBI Defaulter Location Inference Challenge**
