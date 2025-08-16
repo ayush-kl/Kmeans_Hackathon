@@ -19,6 +19,7 @@ function haversine(a, b) {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+
 function minutesDiff(a, b) {
   return Math.abs((new Date(b) - new Date(a)) / 60000);
 }
@@ -32,6 +33,10 @@ function filterNoisyTowerLogs(logs, coords) {
   const clean = [];
   for (let i = 0; i < logs.length - 1; i++) {
     const a = logs[i], b = logs[i + 1];
+    logs[i].lat = coords[a.tower_id].lat;
+    logs[i].lon = coords[a.tower_id].lon;
+     logs[i+1].lat = coords[b.tower_id].lat;
+    logs[i+1].lon = coords[b.tower_id].lon;
     const dist = coords[a.tower_id] && coords[b.tower_id]
       ? haversine(coords[a.tower_id], coords[b.tower_id])
       : 0;
@@ -71,10 +76,11 @@ function insertMerchantVirtualTowers(logs) {
   return enriched.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 }
 
+
 function inferMissingTowerCoords(towerCoords, logs) {
   const inferred = { ...towerCoords };
   const connections = {};
-
+  //console.log(logs);
   for (let i = 0; i < logs.length - 1; i++) {
     const a = logs[i].tower_id;
     const b = logs[i + 1].tower_id;
@@ -85,13 +91,14 @@ function inferMissingTowerCoords(towerCoords, logs) {
     }
     connections[a].add(b);
     connections[b].add(a);
+  //  console.log(connections[a]);
   }
 
   for (const tower in connections) {
     if (inferred[tower]) continue;
     const neighbors = [...connections[tower]].filter(n => inferred[n]);
-    if (neighbors.length < 3) continue;
-
+    if (neighbors.length < 1) continue;
+   // console.log(neighbors,tower);
     let x = 0, y = 0, wSum = 0;
     for (const n of neighbors) {
       const dist = 1 / Math.sqrt(1 + haversine({ lat: 0, lon: 0 }, inferred[n]));
@@ -114,7 +121,8 @@ function inferLocation(logs, towerCoords) {
 
   // console.log(now);
   const filtered = filterNoisyTowerLogs(logs, towerCoords);
-  const enriched = insertMerchantVirtualTowers(filtered);
+//  console.log(filtered);
+  const enriched = filtered;
   const towerScores = {};
   const transitions = {};
 
@@ -160,21 +168,28 @@ function inferLocation(logs, towerCoords) {
   });
 
   scores.sort((a, b) => b.score - a.score);
+
+  const scoreMap = Object.fromEntries(scores.map(s => [s.tower_id, s.score]));
+
   // console.log(now);
  const currentWindow = enriched.filter(l => {
   const logTime = toIST(l.timestamp);
   const nwTime = new Date();
   const nowTime = toIST(nwTime);
-console.log(logTime);
+// console.log(logTime);
+// console.log("hello");
+// console.log(nowTime);
   const logMinutes = logTime.getHours() * 60 + logTime.getMinutes();
   const nowMinutes = nowTime.getHours() * 60 + nowTime.getMinutes();
 
   const diff = Math.abs(logMinutes - nowMinutes);
+  //console.log(logMinutes,  nowMinutes, diff);
   return diff <= 60;
-});
-  console.log(currentWindow);
+}).sort((a, b) => (scoreMap[b.tower_id] || 0) - (scoreMap[a.tower_id] || 0));
+;
+//  console.log(currentWindow);
   
-  console.log(currentWindow.length);
+ // console.log(currentWindow.length);
 
 
   let currentTower = null;
@@ -194,7 +209,8 @@ if (currentWindow.length) {
   const diff = Math.abs(logMinutes - nowMinutes);
   return diff <= 180;}) // 3 hours
     .sort((a, b) => new Date((a.timestamp)) - new Date((b.timestamp)));
-  if (recent.length) currentTower = recent[recent.length - 1].tower_id;
+  if (recent.length) currentTower = recent[0].tower_id;
+ // console.log(recent[0]);
 }
 
   let nextTower = null;
@@ -255,18 +271,24 @@ app.post("/api/upload", (req, res) => {
       .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
     if (logs.length === 0) continue;
-
+   // console.log(towerCoords);
+    
     const inferredCoords = inferMissingTowerCoords(towerCoords, logs);
-    const out = inferLocation(logs, inferredCoords);
 
+    console.log(inferredCoords);
+    const out = inferLocation(logs, inferredCoords);
+    
+   // console.log(out);
     result[id] = {
       topTowers: out.topTowers,
       current: out.currentTower,
       next: out.nextLikelyTower,
-      detailed: out.scores
+      detailed: out.scores,
+      coords: inferredCoords
     };
+    
   }
-
+  console.log(result);
   return res.json(result);
 });
 

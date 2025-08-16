@@ -1,132 +1,142 @@
 [
-    {
-        "device_id": "synthetic_user_001",
-        "timestamp": "2025-08-01T23:05:00",
-        "tower_id": "RAJGARH_GATE",
-        "lat": 26.200111,
-        "lon": 91.743201,
-        "is_defaulter": true,
-        "merchant": false,
-        "phone": "9830883490"
-    },
-    {
-        "device_id": "synthetic_user_001",
-        "timestamp": "2025-08-01T23:05:00",
-        "tower_id": "RAJGARH_GATE",
-        "lat": 26.200111,
-        "lon": 91.743201,
-        "is_defaulter": true,
-        "merchant": false,
-        "phone": "9830883490"
-    },
-    {
-        "device_id": "synthetic_user_001",
-        "timestamp": "2025-08-01T23:05:00",
-        "tower_id": "RAJGARH_GATE",
-        "lat": 26.200111,
-        "lon": 91.743201,
-        "is_defaulter": true,
-        "merchant": false,
-        "phone": "9830883490"
-    },
-    {
-        "device_id": "synthetic_user_001",
-        "timestamp": "2025-08-01T23:05:00",
-        "tower_id": "RAJGARH_GATE",
-        "lat": 26.200111,
-        "lon": 91.743201,
-        "is_defaulter": true,
-        "merchant": false,
-        "phone": "9830883490"
-    },
-    {
-        "device_id": "synthetic_user_001",
-        "timestamp": "2025-08-01T22:00:00",
-        "tower_id": "BAMUNIMAIDAM",
-        "lat": 26.210444,
-        "lon": 91.755000,
-        "is_defaulter": true,
-        "merchant": false,
-        "phone": "9830883490"
-    },
-    {
-        "device_id": "synthetic_user_001",
-        "timestamp": "2025-08-01T18:10:00",
-        "tower_id": "PALTANBAZAR",
-        "lat": 26.192500,
-        "lon": 91.753500,
-        "is_defaulter": true,
-        "merchant": false,
-        "phone": "9830883490"
-    },
-    {
-        "device_id": "synthetic_user_001",
-        "timestamp": "2025-08-01T17:30:00",
-        "tower_id": "KHANAPARA",
-        "lat": 26.130123,
-        "lon": 91.789900,
-        "is_defaulter": true,
-        "merchant": false,
-        "phone": "9830883490"
-    },
-    {
-        "device_id": "synthetic_user_001",
-        "timestamp": "2025-08-01T18:45:00",
-        "tower_id": "SIXMILE",
-        "lat": 26.140555,
-        "lon": 91.801222,
-        "is_defaulter": true,
-        "merchant": false,
-        "phone": "9830883490"
-    },
-    {
-        "device_id": "synthetic_user_001",
-        "timestamp": "2025-08-01T16:20:00",
-        "tower_id": "GSROAD_MALL",
-        "lat": 26.156700,
-        "lon": 91.793300,
-        "is_defaulter": true,
-        "merchant": false,
-        "phone": "9830883490"
-    },
-    {
-        "device_id": "synthetic_user_001",
-        "timestamp": "2025-08-01T16:50:00",
-        "tower_id": "ULUBARI",
-        "lat": 26.175611,
-        "lon": 91.744123,
-        "is_defaulter": true,
-        "merchant": false,
-        "phone": "9830883490"
-    },
-    {
-        "device_id": "synthetic_user_001",
-        "timestamp": "2025-08-01T18:30:00",
-        "tower_id": "LACHITNAGAR",
-        "lat": 26.182912,
-        "lon": 91.747311,
-        "is_defaulter": true,
-        "merchant": false,
-        "phone": "9830883490"
-    },
-    {
-        "device_id": "synthetic_user_001",
-        "timestamp": "2025-08-01T20:05:00",
-        "tower_id": "GANESHGURI",
-        "lat": 26.167000,
-        "lon": 91.789000,
-        "is_defaulter": true,
-        "merchant": false,
-        "phone": "9830883490"
-    },
-    {
-        "device_id": "synthetic_user_001",
-        "timestamp": "2025-08-01T22:18:00",
-        "tower_id": "CITY_MALL",
-        "lat": 26.1875125,
-        "lon": 91.6898125,
-        "is_defaulter": true,
-        "merchant": false,
-        "phone": "9830883490"
-    }
+  {
+    "device_id": "synthetic_user_001",
+    "timestamp": "2025-08-09T11:50:00",
+    "tower_id": "MAIN GATE",
+    "lat": 26.1926375,
+    "lon": 91.6795781,
+    "is_defaulter": true,
+    "merchant": false,
+    "phone": "9669691605"
+  },
+  {
+    "device_id": "synthetic_user_001",
+    "timestamp": "2025-08-09T11:55:00",
+    "tower_id": "DHANSIRI",
+    "lat": 26.1929625,
+    "lon": 91.6969531,
+    "is_defaulter": true,
+    "merchant": true,
+    "phone": "9669691605"
+  },
+  {
+    "device_id": "synthetic_user_001",
+    "timestamp": "2025-08-10T14:00:00",
+    "tower_id": "MARKET COMPLEX",
+    "lat": null,
+    "lon": null,
+    "is_defaulter": true,
+    "merchant": false,
+    "phone": "9669691605"
+  },
+  {
+    "device_id": "synthetic_user_001",
+    "timestamp": "2025-08-10T14:25:00",
+    "tower_id": "CORE-5",
+    "lat": 26.1829875,
+    "lon": 91.6859531,
+    "is_defaulter": true,
+    "merchant": false,
+    "phone": "9669691605"
+  },
+  {
+    "device_id": "synthetic_user_001",
+    "timestamp": "2025-08-10T15:59:00",
+    "tower_id": "MAIN GATE",
+    "lat": 26.1926375,
+    "lon": 91.6795781,
+    "is_defaulter": true,
+    "merchant": true,
+    "phone": "9669691605"
+  },
+  {
+    "device_id": "synthetic_user_001",
+    "timestamp": "2025-08-10T16:05:00",
+    "tower_id": "CORE-5",
+    "lat": 26.1829875,
+    "lon": 91.6859531,
+    "is_defaulter": true,
+    "merchant": false,
+    "phone": "9669691605"
+  },
+  {
+    "device_id": "synthetic_user_001",
+    "timestamp": "2025-08-10T15:59:00",
+    "tower_id": "MAIN GATE",
+    "lat": 26.1926375,
+    "lon": 91.6795781,
+    "is_defaulter": true,
+    "merchant": true,
+    "phone": "9669691605"
+  },
+  {
+    "device_id": "synthetic_user_001",
+    "timestamp": "2025-08-10T16:05:00",
+    "tower_id": "CORE-5",
+    "lat": 26.1829875,
+    "lon": 91.6859531,
+    "is_defaulter": true,
+    "merchant": false,
+    "phone": "9669691605"
+  },
+  {
+    "device_id": "synthetic_user_001",
+    "timestamp": "2025-08-10T18:15:00",
+    "tower_id": "DHANSIRI",
+    "lat": 26.1929625,
+    "lon": 91.6969531,
+    "is_defaulter": true,
+    "merchant": false,
+    "phone": "9669691605"
+  },
+  {
+    "device_id": "synthetic_user_001",
+    "timestamp": "2025-08-10T16:55:00",
+    "tower_id": "MARKET COMPLEX",
+    "lat": null,
+    "lon": null,
+    "is_defaulter": true,
+    "merchant": true,
+    "phone": "9669691605"
+  },
+  {
+    "device_id": "synthetic_user_001",
+    "timestamp": "2025-08-10T14:25:00",
+    "tower_id": "CORE-5",
+    "lat": 26.1829875,
+    "lon": 91.6859531,
+    "is_defaulter": true,
+    "merchant": false,
+    "phone": "9669691605"
+  },
+  {
+    "device_id": "synthetic_user_001",
+    "timestamp": "2025-08-10T15:30:00",
+    "tower_id": "MAIN GATE",
+    "lat": 26.1926375,
+    "lon": 91.6795781,
+    "is_defaulter": true,
+    "merchant": false,
+    "phone": "9669691605"
+  },
+  {
+    "device_id": "synthetic_user_001",
+    "timestamp": "2025-08-10T15:35:00",
+    "tower_id": "DHANSIRI",
+    "lat": 26.1929625,
+    "lon": 91.6969531,
+    "is_defaulter": true,
+    "merchant": true,
+    "phone": "9669691605"
+  },
+  {
+    "device_id": "synthetic_user_001",
+    "timestamp": "2025-08-10T15:40:00",
+    "tower_id": "MARKET COMPLEX",
+    "lat": null,
+    "lon": null,
+    "is_defaulter": true,
+    "merchant": false,
+    "phone": "9669691605"
+  }
 ]

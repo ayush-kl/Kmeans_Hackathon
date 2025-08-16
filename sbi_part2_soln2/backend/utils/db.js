@@ -8,7 +8,7 @@ function readData() {
   if (!fs.existsSync(DB_PATH)) return [];
   const raw = fs.readFileSync(DB_PATH);
   return JSON.parse(raw);
-}
+} 
 
 function writeData(data) {
   fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
