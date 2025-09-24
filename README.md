@@ -2,7 +2,7 @@
 
 This notebook provides a comprehensive workflow for credit risk modeling and binary classification using a real-world banking dataset. The workflow includes data cleaning, feature engineering, imputation, outlier detection, class imbalance handling, model training, and evaluation with advanced techniques.
 
-## Main Steps
+## Main Steps:
 
 1. **Data Loading & Exploration**
    - Load the dataset using pandas
